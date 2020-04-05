@@ -1,0 +1,25 @@
+# tasks of index creation
+---
+- name: validate index_name is defined
+  fail:
+    msg: index_name is not defined
+  when: index_name is not defined
+- name: generate new index name
+  run_once: true
+  delegate_to: 127.0.0.1
+  shell: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13 ; echo ''
+  register: index_out
+- name: save index name as a fact 
+  set_fact:
+    full_index: "{{ index_name }}_{{ index_out.stdout }}"
+- name: create indexes.conf file for deployer and cluster-master
+  include_tasks: add_index.yml
+  args:
+    apply:
+      become: true
+  loop:
+    - "shcluster/apps"
+    - "master-apps"
+  loop_control:
+    loop_var: destenation
+
